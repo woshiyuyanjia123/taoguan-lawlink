@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>韬冠律所 — 连接律所服务器</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #0F2537 0%, #15354E 60%, #0D6E6E 100%);
+      color: #F8FAFC;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: #FFFFFF;
+      color: #0F172A;
+      border-radius: 18px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+    }
+    .hero {
+      background: #0F2537;
+      color: #FFFFFF;
+      padding: 28px 28px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .hero img { width: 54px; height: 54px; border-radius: 12px; }
+    .hero h1 { font-size: 20px; font-weight: 700; }
+    .hero p { font-size: 12px; color: #CBD5E1; margin-top: 4px; }
+    .body { padding: 24px 28px 28px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px; }
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #CBD5E1;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      outline: none;
+    }
+    input:focus { border-color: #0D6E6E; }
+    .hint { font-size: 12px; color: #64748B; margin-top: 8px; line-height: 1.6; }
+    .actions { display: flex; gap: 10px; margin-top: 18px; }
+    button {
+      flex: 1;
+      border: none;
+      border-radius: 10px;
+      padding: 11px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-secondary { background: #F1F5F9; color: #0F2537; }
+    .btn-primary { background: #0F2537; color: #FFFFFF; }
+    .btn-primary:hover { background: #173A54; }
+    .status { margin-top: 14px; padding: 10px 12px; border-radius: 8px; font-size: 12px; display: none; }
+    .status.ok { display: block; background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+    .status.err { display: block; background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
+    .recent { margin-top: 18px; border-top: 1px solid #E2E8F0; padding-top: 14px; }
+    .recent-title { font-size: 12px; color: #64748B; margin-bottom: 8px; }
+    .chip {
+      display: inline-block;
+      margin: 0 6px 6px 0;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: #F1F5F9;
+      color: #0F2537;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="hero">
+      <img src="./assets/icon.png" alt="韬冠律所" />
+      <div>
+        <h1>韬冠律所 · 全流程综合管理系统</h1>
+        <p>Windows / macOS 桌面客户端 (TaoGuan LawLink v2.1.0)</p>
+      </div>
+    </div>
+    <div class="body">
+      <label for="serverUrl">公网 / 内网服务器地址</label>
+      <input id="serverUrl" type="url" placeholder="https://os.taoguanlaw.cn 或 http://127.0.0.1:3000" />
+      <p class="hint">
+        支持连接部署在阿里云/腾讯云/自有服务器的公网 HTTPS 地址，或局域网内网地址。按 <b>Ctrl/Cmd + Shift + S</b> 可随时切换服务器。
+      </p>
+      <div class="actions">
+        <button class="btn-secondary" id="btnCheck" type="button">检测连通性</button>
+        <button class="btn-primary" id="btnConnect" type="button">保存并进入工作台</button>
+      </div>
+      <div id="status" class="status"></div>
+      <div id="recentWrap" class="recent" style="display:none;">
+        <div class="recent-title">最近连接过的律所服务器：</div>
+        <div id="recentList"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const input = document.getElementById("serverUrl");
+    const statusBox = document.getElementById("status");
+    const recentWrap = document.getElementById("recentWrap");
+    const recentList = document.getElementById("recentList");
+
+    function setStatus(ok, text) {
+      statusBox.className = "status " + (ok ? "ok" : "err");
+      statusBox.textContent = text;
+    }
+
+    async function init() {
+      const cfg = await window.taoguanDesktop.getConfig();
+      if (cfg.serverUrl) input.value = cfg.serverUrl;
+      if (cfg.recentUrls && cfg.recentUrls.length > 0) {
+        recentWrap.style.display = "block";
+        cfg.recentUrls.forEach((u) => {
+          const span = document.createElement("span");
+          span.className = "chip";
+          span.textContent = u;
+          span.onclick = () => { input.value = u; };
+          recentList.appendChild(span);
+        });
+      }
+    }
+
+    document.getElementById("btnCheck").onclick = async () => {
+      setStatus(true, "正在探测韬冠律所服务端 /api/health …");
+      const res = await window.taoguanDesktop.checkHealth(input.value);
+      if (res.ok) {
+        setStatus(true, `连接成功：${res.data.brand || res.data.name || "TaoGuan LawLink"} (v${res.data.version || "2.1.0"})`);
+      } else {
+        setStatus(false, "连接失败：" + res.error);
+      }
+    };
+
+    document.getElementById("btnConnect").onclick = async () => {
+      const url = input.value.trim();
+      if (!/^https?:\/\//i.test(url)) {
+        setStatus(false, "请输入合法的 https:// 或 http:// 服务器地址");
+        return;
+      }
+      await window.taoguanDesktop.connect(url);
+    };
+
+    init();
+  </script>
+</body>
+</html>

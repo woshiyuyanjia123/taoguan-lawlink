@@ -1,0 +1,64 @@
+# 韬冠律所全流程综合管理系统 — 公网生产环境部署配置（PostgreSQL 16 + App + Caddy 自动 HTTPS）
+# 用法：
+#   1. 复制 .env.example 为 .env 并填写 PUBLIC_DOMAIN（如 os.taoguanlaw.cn）、数据库密码与加密密钥
+#   2. 执行：docker compose -f docker-compose.prod.yml up -d --build
+#   3. 初始化库：docker compose -f docker-compose.prod.yml exec app npx prisma migrate deploy && docker compose -f docker-compose.prod.yml exec app npx prisma db seed
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: taoguan-lawlink-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-taoguan_lawlink}
+      POSTGRES_USER: ${POSTGRES_USER:-taoguan}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeDbPass2026!}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-taoguan} -d ${POSTGRES_DB:-taoguan_lawlink}"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  app:
+    image: ${TAOGUAN_IMAGE:-ghcr.io/woshiyuyanjia123/taoguan-lawlink:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taoguan-lawlink-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-taoguan}:${POSTGRES_PASSWORD:-ChangeDbPass2026!}@db:5432/${POSTGRES_DB:-taoguan_lawlink}?schema=public
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-https://os.taoguanlaw.cn}
+      STORAGE_ENCRYPTION_KEY: ${STORAGE_ENCRYPTION_KEY}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@taoguanlaw.cn}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-ChangeMe!2026}
+      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-韬冠超级管理员}
+      APP_STORAGE_DIR: /app/storage
+      BACKUP_DIR: /app/backups
+    volumes:
+      - ./data/storage:/app/storage
+      - ./data/backups:/app/backups
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: taoguan-lawlink-caddy
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:-:80}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data/caddy_data:/data
+      - ./data/caddy_config:/config

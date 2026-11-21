@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <title>韬冠律所 App</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+      background: linear-gradient(160deg, #0F2537 0%, #163750 65%, #0D6E6E 100%);
+      color: #F8FAFC;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 24px 20px;
+    }
+    .box {
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+      background: #FFFFFF;
+      color: #0F172A;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    }
+    .top {
+      background: #0F2537;
+      color: #FFF;
+      padding: 28px 22px 24px;
+      text-align: center;
+    }
+    .top img { width: 68px; height: 68px; border-radius: 16px; margin-bottom: 12px; }
+    .top h1 { font-size: 20px; font-weight: 700; }
+    .top p { font-size: 12px; color: #CBD5E1; margin-top: 6px; }
+    .form { padding: 22px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px; }
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #CBD5E1;
+      border-radius: 12px;
+      font-size: 14px;
+      font-family: ui-monospace, monospace;
+      outline: none;
+    }
+    input:focus { border-color: #0D6E6E; }
+    .hint { font-size: 12px; color: #64748B; margin-top: 8px; line-height: 1.55; }
+    button {
+      width: 100%;
+      margin-top: 14px;
+      border: none;
+      border-radius: 12px;
+      padding: 13px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-go { background: #0F2537; color: #FFF; }
+    .btn-test { background: #F1F5F9; color: #0F2537; margin-top: 10px; font-size: 13px; padding: 10px; }
+    .msg { margin-top: 12px; font-size: 12px; border-radius: 10px; padding: 10px; display: none; }
+    .msg.ok { display: block; background: #ECFDF5; color: #065F46; }
+    .msg.err { display: block; background: #FEF2F2; color: #991B1B; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="top">
+      <img src="./icon-512.png" alt="韬冠律所" />
+      <h1>韬冠律所移动工作台</h1>
+      <p>收案利冲 · 办案函证 · 财务审批 · 拍照上传材料</p>
+    </div>
+    <div class="form">
+      <label for="url">律所公网服务器地址</label>
+      <input id="url" type="url" placeholder="https://os.taoguanlaw.cn" />
+      <p class="hint">首次使用请填写韬冠律所公网域名（支持 HTTPS 与局域网地址）。连接成功后会自动记住，下次秒开。</p>
+      <button id="go" class="btn-go" type="button">连接并进入韬冠律所</button>
+      <button id="test" class="btn-test" type="button">检测服务器连通性</button>
+      <div id="msg" class="msg"></div>
+    </div>
+  </div>
+  <script>
+    const KEY = "taoguan_lawlink_server_url";
+    const urlInput = document.getElementById("url");
+    const msgBox = document.getElementById("msg");
+
+    function showMsg(ok, text) {
+      msgBox.className = "msg " + (ok ? "ok" : "err");
+      msgBox.textContent = text;
+    }
+
+    const saved = localStorage.getItem(KEY);
+    if (saved) {
+      urlInput.value = saved;
+    }
+
+    document.getElementById("test").onclick = async () => {
+      const clean = urlInput.value.trim().replace(/\/+$/, "");
+      if (!/^https?:\/\//i.test(clean)) {
+        showMsg(false, "请输入以 https:// 或 http:// 开头的地址");
+        return;
+      }
+      showMsg(true, "正在探测韬冠律所服务器…");
+      try {
+        const res = await fetch(clean + "/api/health");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        showMsg(true, "连接成功：" + (data.brand || data.name || "韬冠律所") + " v" + (data.version || "2.1.0"));
+      } catch (e) {
+        showMsg(false, "连接失败：" + (e.message || "网络不可达"));
+      }
+    };
+
+    document.getElementById("go").onclick = () => {
+      const clean = urlInput.value.trim().replace(/\/+$/, "");
+      if (!/^https?:\/\//i.test(clean)) {
+        showMsg(false, "请输入有效的服务器地址");
+        return;
+      }
+      localStorage.setItem(KEY, clean);
+      window.location.href = clean;
+    };
+  </script>
+</body>
+</html>

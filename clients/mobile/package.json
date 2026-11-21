@@ -1,0 +1,22 @@
+{
+  "name": "taoguan-lawlink-mobile",
+  "version": "2.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "韬冠律所全流程综合管理系统 — Android / iOS 移动客户端（Capacitor 6）",
+  "scripts": {
+    "cap:add:android": "npx cap add android",
+    "cap:add:ios": "npx cap add ios",
+    "cap:sync": "npx cap sync",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/ios": "^6.2.0"
+  }
+}

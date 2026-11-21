@@ -1,0 +1,20 @@
+{
+  "appId": "cn.taoguanlaw.lawlink",
+  "appName": "韬冠律所",
+  "webDir": "public",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true,
+    "allowNavigation": ["*"]
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 900,
+      "backgroundColor": "#0F2537"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0F2537"
+    }
+  }
+}

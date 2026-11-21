@@ -1,0 +1,19 @@
+# 韬冠律所公网 HTTPS 自动反向代理配置
+# 当 .env 中设置 PUBLIC_DOMAIN=os.yourdomain.com 时，Caddy 自动向 Let's Encrypt 申请并续期 HTTPS 证书。
+# 未绑定域名仅用公网 IP 试用时，设置 PUBLIC_DOMAIN=:80。
+
+{$PUBLIC_DOMAIN::80} {
+	encode gzip zstd
+
+	# 允许单次上传最大 50MB 案卷/合同/扫描件
+	request_body {
+		max_size 50MB
+	}
+
+	reverse_proxy app:3000 {
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+}
